@@ -15,11 +15,10 @@ setup(
     license='MIT',
     keywords='stock bot',
     url='https://github.com/',
-    long_description=read('README.md'),
     classifiers=[
         'Development Status :: 1 - Planning',
         'Topic :: Utilities',
         'License :: OSI Approved :: MIT License',
     ],
-    requires=['itchat>=1.3.9']
+    requires=['itchat>=1.3.9', 'bs4>=0.0.1', 'rx>=1.5.9', 'feedparser>=5.2.1']
 )
