@@ -11,6 +11,7 @@ from rx import Observable
 
 import Config
 import RssReader
+from wencai import WencaiApi
 from xiaoice import xiaoiceApi
 
 config = Config.read_from_file()
@@ -34,6 +35,12 @@ guoguoGroup = itchat.search_chatrooms(name=config.target_group)[0]['UserName']
 
 def process_waiting(msg: WaitingMessage):
     if msg is None:
+        return
+
+    wencai_result = WencaiApi().chat(msg.encode_msg())
+    if wencai_result is not None:
+        itchat.send(u'@%s\u2005%s' % (msg.from_user_nick_name, wencai_result),
+                    toUserName=msg.from_user)
         return
 
     xiaoice_result = xiaoiceApi().chat(msg.encode_msg())

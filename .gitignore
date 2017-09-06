@@ -1,5 +1,6 @@
 *.pkl
 *.headers
+*.form
 
 # Created by https://www.gitignore.io/api/vim,pydev,emacs,python,pycharm+all
 
