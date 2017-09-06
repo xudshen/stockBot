@@ -42,6 +42,17 @@ class WencaiApi():
         except:
             return None
 
+    def parseTable(self, tables):
+        try:
+            table = tables[0]
+            result = table["title"] + "\n"
+            for item in table["tr"]:
+                result += "{}({}) 今日现价{}, 涨跌幅{}%\n".format(
+                    item[1]["val"], item[0]["val"], item[2]["val"], item[3]["val"])
+            return result
+        except:
+            return None
+
     def chat(self, input_str):
         form = copy.deepcopy(self.form)
         form["query"] = input_str
@@ -54,17 +65,24 @@ class WencaiApi():
             if result["status_code"] != 0:
                 return None
 
-            infos = result["answer"][0]["txt"]
+            answer = result["answer"][0]
             result_hint = ""
 
-            hint0 = self.parse0(infos)
+            hint0 = self.parse0(answer["txt"])
             if hint0 is not None:
                 result_hint += hint0
 
-            hint2 = self.parse2(infos)
+            hint2 = self.parse2(answer["txt"])
             if hint2 is not None:
                 result_hint += hint2
 
+            table = self.parseTable(answer["table"])
+            if table is not None:
+                result_hint += table
+
+            if "outside_url" in answer:
+                if len(answer["outside_url"]) > 0:
+                    result_hint += "查看更多:{}".format(answer["outside_url"])
             return result_hint if result_hint != "" else None
             # hints = content["data"]["result"]["descs"]
         except Exception as e:
