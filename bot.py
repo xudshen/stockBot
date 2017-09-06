@@ -5,11 +5,13 @@ from time import mktime
 from urllib.parse import urlparse, parse_qs
 
 import itchat
+import rx
 from bs4 import BeautifulSoup
 from rx import Observable
 
 import Config
 import RssReader
+from xiaoice import xiaoiceApi
 
 config = Config.read_from_file()
 itchat.auto_login(hotReload=True, enableCmdQR=2)
@@ -27,58 +29,31 @@ class WaitingMessage:
         return self.msg_text
 
 
-class MessageQueue:
-    def __init__(self):
-        self.stack = list()
-
-    def request_answer(self):
-        if len(self.stack) == 0:
-            return
-        msg = self.stack[0]
-        if not msg.waiting:
-            itchat.send(msg.encode_msg(), toUserName=xiaoice)
-            msg.waiting = True
-
-    def en_queue(self, msg: WaitingMessage):
-        self.stack.append(msg)
-        self.request_answer()
-
-    def clear_all(self):
-        self.stack.clear()
-
-
-xiaoice = itchat.search_mps(name='小冰')[0]['UserName']
 guoguoGroup = itchat.search_chatrooms(name=config.target_group)[0]['UserName']
-messageQueue = MessageQueue()
 
 
-@itchat.msg_register(itchat.content.TEXT, isMpChat=True)
-def from_xiaoice(msg):
-    if xiaoice != msg["FromUserName"]:
+def process_waiting(msg: WaitingMessage):
+    if msg is None:
         return
-    ice_msg = msg['Text']
-    try:
-        msg = messageQueue.stack.pop(0)
-        while msg.waiting:
-            try:
-                itchat.send(u'@%s\u2005%s' % (msg.from_user_nick_name, ice_msg), toUserName=msg.from_user)
-            except:
-                itchat.send(u'@%s\u2005%s' % (msg.from_user_nick_name, "不懂诶"), toUserName=msg.from_user)
-            msg = messageQueue.stack.pop(0)
-    except:
-        pass
 
-    messageQueue.request_answer()
+    xiaoice_result = xiaoiceApi().chat(msg.encode_msg())
+    if xiaoice_result["status"] == "succeed":
+        itchat.send(u'@%s\u2005%s' % (msg.from_user_nick_name, xiaoice_result["text"]),
+                    toUserName=msg.from_user)
+    else:
+        itchat.send(u'@%s\u2005%s' % (msg.from_user_nick_name, "what?"),
+                    toUserName=msg.from_user)
+
+
+xiaoice_subject = rx.subjects.ReplaySubject(None)
+xiaoice_subject.subscribe(process_waiting)
 
 
 @itchat.msg_register('Text', isGroupChat=True)
 def group_reply(msg):
     if msg['isAt']:
         waiting_msg = WaitingMessage(msg['MsgId'], msg['Text'], msg['FromUserName'], msg['ActualNickName'])
-        if waiting_msg.encode_msg() == " 重启":
-            messageQueue.clear_all()
-        else:
-            messageQueue.en_queue(waiting_msg)
+        xiaoice_subject.on_next(waiting_msg)
 
 
 rss_map = {}
