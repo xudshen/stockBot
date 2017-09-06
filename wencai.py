@@ -24,10 +24,23 @@ class WencaiApi():
             subjects = content["data"]["global"]["subjects"]
             subject = subjects[list(subjects.keys())[0]]
 
-            return "{}({}) 今日现价{}, 涨跌幅{}%, {}\n".format(
-                subject["name"], subject["hqcode"],
-                subject["latest_price"],
-                subject["rise_fall_rate"], subject["rise_fall"])
+            result = "\n{}({})".format(subject["name"], subject["hqcode"])
+            hasMoreInfo = False
+            if "latest_price" in subject:
+                hasMoreInfo = True
+                result += " 今日现价{}".format(subject["latest_price"])
+            if "rise_fall_rate" in subject:
+                hasMoreInfo = True
+                result += " 涨跌幅{}%".format(subject["rise_fall_rate"])
+            if "rise_fall" in subject:
+                hasMoreInfo = True
+                result += " {}".format(subject["rise_fall"])
+            if ("is_suspended" in subject) and subject["is_suspended"]:
+                hasMoreInfo = True
+                result += "停牌"
+
+            result += "\n"
+            return result if hasMoreInfo else None
         except:
             return None
 
@@ -47,7 +60,7 @@ class WencaiApi():
             table = tables[0]
             result = table["title"] + "\n"
             for item in table["tr"]:
-                result += "{}({}) 今日现价{}, 涨跌幅{}%\n".format(
+                result += "→{}({}) 今日现价{}, 涨跌幅{}%\n".format(
                     item[1]["val"], item[0]["val"], item[2]["val"], item[3]["val"])
             return result
         except:
@@ -87,3 +100,7 @@ class WencaiApi():
             # hints = content["data"]["result"]["descs"]
         except Exception as e:
             return None
+
+
+if __name__ == '__main__':
+    WencaiApi().chat("gfly")

@@ -71,7 +71,11 @@ class xiaoiceApi():
             response = requests.get("http://weibo.com/aj/message/getbyid?ajwvr=6&uid=5175429989&count=1&_t=0",
                                     headers=self.headers)
             soup = BeautifulSoup(response.json()['data']['html'], "lxml")
-            text = soup.find("p", class_='page').text
+            answer = soup.find("p", class_='page')
+            if answer is None:
+                time.sleep(0.3)
+                continue
+            text = answer.text
             if text != input_strs or times > 10:
                 break
             time.sleep(0.3)
